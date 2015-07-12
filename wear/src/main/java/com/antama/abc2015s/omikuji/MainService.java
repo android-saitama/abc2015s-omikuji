@@ -85,10 +85,12 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
         public float[] v = new float[3];
         private Handler mHandler = new Handler();
         private float mWeightenedNorm = 0.0f;
-        //private Counter mCounter = new RunCounter(22, 125); // 125ms * 22 -> ~3 seconds to trip
-        //private float mWeightFactor = 0.5f;
-        private Counter mCounter = new PeakCounter(13, 3000); // 13 (~3 strokes) shakes in 3 seconds to trip
-        private float mWeightFactor = 0.5f;
+        //private final Counter mCounter = new RunCounter(22, 125); // 125ms * 22 -> ~3 seconds to trip
+        //private final float mWeightFactor = 0.5f;
+        //private final float mNormTheshold = 15.0f;
+        private final Counter mCounter = new PeakCounter(13, 3000); // 13 (~3 strokes) shakes in 3 seconds to trip
+        private final float mWeightFactor = 0.5f;
+        private final float mNormTheshold = 20.0f;
 
         @Override
         public void onSensorChanged(SensorEvent event) {
@@ -97,8 +99,7 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
             v[2] = event.values[2];
             final float norm = (float)Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
             mWeightenedNorm = mWeightenedNorm * (1-mWeightFactor) + norm * mWeightFactor;
-            //if (mWeightenedNorm > 15.0f) {
-            if (mWeightenedNorm > 20.0f) {
+            if (mWeightenedNorm > mNormTheshold) {
                 mCounter.tick();
             } else {
                 if (mCounter.isTripped()) {
