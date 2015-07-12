@@ -2,6 +2,9 @@ package com.antama.abc2015s.omikuji;
 
 import java.util.Scanner;
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import android.content.Context;
 import android.content.ContentProvider;
@@ -35,9 +38,14 @@ public class NoteProvider extends ContentProvider {
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         try {
             final MatrixCursor c = new MatrixCursor(COLUMNS);
+            final List<Object[]> well = new ArrayList<Object[]>();
+
             for (CSVRecord r : CSVParser.parse(getData(), CSVFormat.DEFAULT)) {
-                c.addRow(new Object[] {c.getCount(), r.get("市区町村"), r.get("タイトル"), r.get("内容")});
+                well.add(new Object[] {0, r.get("市区町村"), r.get("タイトル"), r.get("内容")});
             }
+            Collections.shuffle(well);
+
+            c.addRow(well.get(0));
             return c;
         } catch (final IOException e) {
             throw new RuntimeException(e);
