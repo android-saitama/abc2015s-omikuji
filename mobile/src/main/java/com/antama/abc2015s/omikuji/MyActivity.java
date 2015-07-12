@@ -64,6 +64,7 @@ public class MyActivity extends Activity implements GoogleApiClient.ConnectionCa
             @Override
             public void onMessageReceived(MessageEvent messageEvent) {
                 if ("bump".equals(new String(messageEvent.getData()))) {
+                    // TODO: write what should be done on Omikuji roll (#3)
                     Log.d(TAG, "bump!");
                 }
             }
