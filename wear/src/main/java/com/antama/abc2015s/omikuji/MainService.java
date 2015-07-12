@@ -22,10 +22,6 @@ import com.google.android.gms.wearable.Wearable;
 public class MainService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     public static final String TAG = "MS";
-    public static final String ACTION_STAGE_1 = "action_stage_1";
-    public static final String ACTION_STAGE_2 = "action_stage_2";
-    public static final String EXTRA_NORM = "norm";
-    public static final String EXTRA_ROTATION = "rotation";
 
     private SensorAction mSensorAction = new SensorAction();
     private RotationSensorAction mRotationSensorAction = new RotationSensorAction();
@@ -120,10 +116,6 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
         }
 
         private void triggerStage2(final float norm, final float[] rotation) {
-            final Intent intent = new Intent(ACTION_STAGE_2);
-            intent.putExtra(EXTRA_NORM, norm);
-            intent.putExtra(EXTRA_ROTATION, rotation);
-            LocalBroadcastManager.getInstance(MainService.this).sendBroadcast(intent);
             Wearable.NodeApi.getConnectedNodes(mClient).setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
