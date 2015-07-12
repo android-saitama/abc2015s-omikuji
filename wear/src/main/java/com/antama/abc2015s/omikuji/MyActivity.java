@@ -35,7 +35,7 @@ public class MyActivity extends Activity {
         super.onResume();
         final Intent intent = new Intent(this, MainService.class);
         startService(intent);
-        LocalBroadcastManager.getInstance(this).registerReceiver(mSignificantAction, new IntentFilter(MainService.ACTION_SIGNIFICANT));
+        LocalBroadcastManager.getInstance(this).registerReceiver(mSignificantAction, new IntentFilter(MainService.ACTION_STAGE_2));
     }
 
     @Override
