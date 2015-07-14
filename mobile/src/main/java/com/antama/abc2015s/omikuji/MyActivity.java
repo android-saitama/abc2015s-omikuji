@@ -11,6 +11,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.epson.eposprint.Builder;
+import com.epson.eposprint.EposException;
+import com.epson.eposprint.Print;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.MessageApi;
@@ -35,6 +38,7 @@ public class MyActivity extends Activity implements GoogleApiClient.ConnectionCa
         }
 
         mClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).addConnectionCallbacks(this).addOnConnectionFailedListener(this).build();
+
     }
 
     @Override
@@ -65,6 +69,9 @@ public class MyActivity extends Activity implements GoogleApiClient.ConnectionCa
             public void onMessageReceived(MessageEvent messageEvent) {
                 if ("bump".equals(new String(messageEvent.getData()))) {
                     // TODO: write what should be done on Omikuji roll (#3)
+
+                    testPrint();
+
                     Log.d(TAG, "bump!");
                 }
             }
@@ -106,5 +113,47 @@ public class MyActivity extends Activity implements GoogleApiClient.ConnectionCa
             View rootView = inflater.inflate(R.layout.fragment_my, container, false);
             return rootView;
         }
+    }
+
+
+    public void testPrint(){
+        int[] status = new int[1];
+        status[0] = 0;
+
+        try {
+            Print printer = new Print(getApplicationContext());
+
+            printer.openPrinter(Print.DEVTYPE_TCP, "192.168.21.93", Print.FALSE,
+                    Print.PARAM_DEFAULT, Print.PARAM_DEFAULT);
+
+//Builder クラスのインスタンスを初期化
+            Builder builder = new Builder("TM-T70", Builder.MODEL_JAPANESE);
+// 印刷ドキュメントの作成
+            builder.addTextLang(Builder.LANG_JA);
+            builder.addTextSmooth(Builder.TRUE);
+            builder.addTextFont(Builder.FONT_A);
+            builder.addTextSize(3, 3);
+            builder.addText("Hello,\t");
+            builder.addText("World!\n");
+            builder.addCut(Builder.CUT_FEED);
+
+            printer.sendData(builder, 10000, status);
+
+            if ((status[0] & Print.ST_PRINT_SUCCESS) == Print.ST_PRINT_SUCCESS) {
+                builder.clearCommandBuffer();
+            }
+
+            printer.closePrinter();
+        } catch (EposException e) {
+            int errStatus = e.getErrorStatus();
+            android.util.Log.e(TAG, "errStatus = " + errStatus);
+
+            e.printStackTrace();
+
+            if(errStatus == EposException.ERR_PARAM){
+
+            }
+        }
+
     }
 }
