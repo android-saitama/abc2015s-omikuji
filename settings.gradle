@@ -1,1 +1,4 @@
 include ':mobile', ':wear'
+
+// for use the epos stub
+//include ':dummy'

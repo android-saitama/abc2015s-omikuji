@@ -24,4 +24,7 @@ dependencies {
     wearApp project(':wear')
     compile 'com.google.android.gms:play-services:5.0.89'
     compile 'org.apache.commons:commons-csv:1.1'
+
+    // For use the epos stub
+    //compile project(':dummy')
 }
