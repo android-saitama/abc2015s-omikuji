@@ -1,6 +1,7 @@
 package com.antama.abc2015s.omikuji;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -28,6 +29,10 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
     private RotationSensorAction mRotationSensorAction = new RotationSensorAction();
 
     public GoogleApiClient mClient;
+
+    public static Intent call(final Context from) {
+        return new Intent(from, MainService.class);
+    }
 
     @Override
     public IBinder onBind(final Intent intent) {
@@ -86,10 +91,10 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
         public float[] v = new float[3];
         private Handler mHandler = new Handler();
         private float mWeightenedNorm = 0.0f;
-        //private final Counter mCounter = new RunCounter(22, 125); // 125ms * 22 -> ~3 seconds to trip
+        //private final Counter mCounter = new RunCounter(MainService.this, 22, 125); // 125ms * 22 -> ~3 seconds to trip
         //private final float mWeightFactor = 0.5f;
         //private final float mNormTheshold = 15.0f;
-        private final Counter mCounter = new PeakCounter(13, 3000); // 13 (~3 strokes) shakes in 3 seconds to trip
+        private final Counter mCounter = new PeakCounter(MainService.this, 13, 3000); // 13 (~3 strokes) shakes in 3 seconds to trip
         private final float mWeightFactor = 0.5f;
         private final float mNormTheshold = 20.0f;
 
@@ -158,6 +163,7 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
     }
 
     private static class RunCounter implements Counter {
+        private Context mContext;
         private int mTripAt;
         private int mInterval;
         private long mCheckedAt;
@@ -167,7 +173,8 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
         private boolean mVibrating = false;
 
 
-        public RunCounter(final int tripAt, final int interval) {
+        public RunCounter(final Context c, final int tripAt, final int interval) {
+            mContext = c;
             mTripAt = tripAt;
             mInterval = interval;
         }
@@ -205,21 +212,28 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
                         return;
                     }
                 } finally {
+                    postNotify(mCount / (float)mTripAt);
                     mVibrating = false;
                     mCheckedAt = now;
                 }
             }
         }
+
+        private void postNotify(final float t) {
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(MyActivity.notifyTension(t));
+        }
     }
 
     private static class PeakCounter implements Counter {
+        private Context mContext;
         private int mTripAt;
         private int mInterval;
         private long mCheckedAt;
 
         private int mCount = 0;
 
-        public PeakCounter(final int tripAt, final int interval) {
+        public PeakCounter(final Context c, final int tripAt, final int interval) {
+            mContext = c;
             mTripAt = tripAt;
             mInterval = interval;
         }
@@ -249,9 +263,14 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
                     mCount = 0;
                     return;
                 } finally {
+                    postNotify(mCount / (float)mTripAt);
                     mCheckedAt = now;
                 }
             }
+        }
+
+        private void postNotify(final float t) {
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(MyActivity.notifyTension(t));
         }
     }
 

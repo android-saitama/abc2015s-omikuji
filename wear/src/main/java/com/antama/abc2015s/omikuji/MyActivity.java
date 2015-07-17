@@ -14,6 +14,14 @@ public class MyActivity extends Activity {
 
     public static final String TAG = "MA";
 
+    private TensionMeterAction mTensionMeterAction = new TensionMeterAction();
+
+    public static Intent notifyTension(final float t) {
+        final Intent i = new Intent(TensionMeterAction.ACTION);
+        i.putExtra(TensionMeterAction.KEY_TENSION, t);
+        return i;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,7 +31,34 @@ public class MyActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        final Intent intent = new Intent(this, MainService.class);
-        startService(intent);
+        mTensionMeterAction.register();
+
+        startService(MainService.call(this));
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        mTensionMeterAction.unregister();
+    }
+
+    private class TensionMeterAction extends BroadcastReceiver {
+        private static final String ACTION = "tension";
+        private static final String KEY_TENSION = "tension";
+
+        public void register() {
+            LocalBroadcastManager.getInstance(MyActivity.this).registerReceiver(this, new IntentFilter(ACTION));
+        }
+
+        public void unregister() {
+            LocalBroadcastManager.getInstance(MyActivity.this).unregisterReceiver(this);
+        }
+
+        @Override
+        public void onReceive(final Context c, final Intent data) {
+
+        }
+    }
+
 }
