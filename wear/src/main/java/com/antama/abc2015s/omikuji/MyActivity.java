@@ -1,8 +1,10 @@
 package com.antama.abc2015s.omikuji;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -16,9 +18,8 @@ public class MyActivity extends Activity {
 
     private TensionMeterAction mTensionMeterAction = new TensionMeterAction();
 
-    public static Intent notifyTension(final float t) {
-        final Intent i = new Intent(TensionMeterAction.ACTION);
-        i.putExtra(TensionMeterAction.KEY_TENSION, t);
+    public static Intent notifyTripped() {
+        final Intent i = new Intent(TensionMeterAction.ACTION_TRIPPED);
         return i;
     }
 
@@ -44,11 +45,10 @@ public class MyActivity extends Activity {
     }
 
     private class TensionMeterAction extends BroadcastReceiver {
-        private static final String ACTION = "tension";
-        private static final String KEY_TENSION = "tension";
+        private static final String ACTION_TRIPPED = "tripped";
 
         public void register() {
-            LocalBroadcastManager.getInstance(MyActivity.this).registerReceiver(this, new IntentFilter(ACTION));
+            LocalBroadcastManager.getInstance(MyActivity.this).registerReceiver(this, new IntentFilter(ACTION_TRIPPED));
         }
 
         public void unregister() {
@@ -57,8 +57,19 @@ public class MyActivity extends Activity {
 
         @Override
         public void onReceive(final Context c, final Intent data) {
-
+            final Context a = MyActivity.this;
+            startService(MainService.block(a));
+            new AlertDialog.Builder(a)
+                .setMessage("！！！")
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(final DialogInterface dialog, final int which) {
+                        startService(MainService.unblock(a));
+                    }
+                })
+                .create().show();
         }
+
     }
 
 }

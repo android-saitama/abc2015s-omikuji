@@ -26,12 +26,27 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
     public static final String TAG = "MS";
 
     private SensorAction mSensorAction = new SensorAction();
-    private RotationSensorAction mRotationSensorAction = new RotationSensorAction();
+    private PeakCounter mCounter = new PeakCounter(this, 13, 3000); // 13 (~3 strokes) shakes in 3 seconds to trip
 
-    public GoogleApiClient mClient;
+    private static final String ACTION_BLOCK = "block";
+    private static final String ACTION_UNBLOCK = "unblock";
+
+    private GoogleApiClient mClient;
 
     public static Intent call(final Context from) {
         return new Intent(from, MainService.class);
+    }
+
+    public static Intent block(final Context from) {
+        final Intent i = new Intent(from, MainService.class);
+        i.setAction(ACTION_BLOCK);
+        return i;
+    }
+
+    public static Intent unblock(final Context from) {
+        final Intent i = new Intent(from, MainService.class);
+        i.setAction(ACTION_UNBLOCK);
+        return i;
     }
 
     @Override
@@ -41,7 +56,17 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+        final String action = intent.getAction();
+        if (action != null) {
+            if (ACTION_BLOCK.equals(action)) {
+                mCounter.block();
+            } else if (ACTION_UNBLOCK.equals(action)) {
+                mCounter.unblock();
+            }
+            return START_STICKY;
+        } else {
+            return START_STICKY;
+        }
     }
 
     @Override
@@ -78,42 +103,30 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
         final SensorManager sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 
         sensorManager.registerListener(mSensorAction, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_UI);
-        sensorManager.registerListener(mRotationSensorAction, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_UI);
     }
 
     private void unwatch() {
         final SensorManager sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         sensorManager.unregisterListener(mSensorAction);
-        sensorManager.unregisterListener(mRotationSensorAction);
     }
 
     private class SensorAction implements SensorEventListener {
         public float[] v = new float[3];
         private Handler mHandler = new Handler();
-        private float mWeightenedNorm = 0.0f;
-        //private final Counter mCounter = new RunCounter(MainService.this, 22, 125); // 125ms * 22 -> ~3 seconds to trip
-        //private final float mWeightFactor = 0.5f;
-        //private final float mNormTheshold = 15.0f;
-        private final Counter mCounter = new PeakCounter(MainService.this, 13, 3000); // 13 (~3 strokes) shakes in 3 seconds to trip
-        private final float mWeightFactor = 0.5f;
-        private final float mNormTheshold = 20.0f;
 
         @Override
         public void onSensorChanged(SensorEvent event) {
             v[0] = event.values[0];
             v[1] = event.values[1];
             v[2] = event.values[2];
-            final float norm = (float)Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-            mWeightenedNorm = mWeightenedNorm * (1-mWeightFactor) + norm * mWeightFactor;
-            if (mWeightenedNorm > mNormTheshold) {
-                mCounter.tick();
-            } else {
+            if (!mCounter.tick((float)Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]))) {
                 if (mCounter.isTripped()) {
-                    Log.d(TAG, String.format("stage2: [+] %f", mWeightenedNorm));
+                    Log.d(TAG, String.format("stage2: [+] %f", mCounter.getWeightenedNorm()));
+                    LocalBroadcastManager.getInstance(MainService.this).sendBroadcast(MyActivity.notifyTripped());
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            triggerStage2(norm, mRotationSensorAction.v);
+                            triggerStage2();
                         }
                     });
                     mCounter.reset();
@@ -122,7 +135,7 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
             mCounter.check();
         }
 
-        private void triggerStage2(final float norm, final float[] rotation) {
+        private void triggerStage2() {
             Wearable.NodeApi.getConnectedNodes(mClient).setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
@@ -141,96 +154,18 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     }
-    private class RotationSensorAction implements SensorEventListener {
-        public float[] v = new float[3];
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            v[0] = event.values[0];
-            v[1] = event.values[1];
-            v[2] = event.values[2];
-        }
 
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
-    }
-
-    private static interface Counter {
-        boolean isTripped();
-        void reset();
-        void tick();
-        void check();
-    }
-
-    private static class RunCounter implements Counter {
+    private static class PeakCounter {
         private Context mContext;
         private int mTripAt;
         private int mInterval;
         private long mCheckedAt;
+        private boolean mBlocked = false;
 
         private int mCount = 0;
-        private boolean mActive = false;
-        private boolean mVibrating = false;
-
-
-        public RunCounter(final Context c, final int tripAt, final int interval) {
-            mContext = c;
-            mTripAt = tripAt;
-            mInterval = interval;
-        }
-
-        public boolean isTripped() {
-            return mCount >= mTripAt;
-        }
-
-        public void reset() {
-            mCount = 0;
-            mVibrating = false;
-            mActive = false;
-            mCheckedAt = 0;
-        }
-
-        public void tick() {
-            mVibrating = true;
-            check();
-        }
-
-        public void check() {
-            final long now = System.currentTimeMillis();
-            if ((now - mCheckedAt) > mInterval) {
-                try {
-                    mActive = mVibrating;
-                    if (mActive) {
-                        ++mCount;
-                        Log.d(TAG, String.format("check: [+] %d", mCount));
-                        return;
-                    } else {
-                        if (mCount > 0) {
-                            Log.d(TAG, String.format("check: [-] %d", mCount));
-                        }
-                        mCount = 0;
-                        return;
-                    }
-                } finally {
-                    postNotify(mCount / (float)mTripAt);
-                    mVibrating = false;
-                    mCheckedAt = now;
-                }
-            }
-        }
-
-        private void postNotify(final float t) {
-            LocalBroadcastManager.getInstance(mContext).sendBroadcast(MyActivity.notifyTension(t));
-        }
-    }
-
-    private static class PeakCounter implements Counter {
-        private Context mContext;
-        private int mTripAt;
-        private int mInterval;
-        private long mCheckedAt;
-
-        private int mCount = 0;
+        private float mWeightenedNorm = 0.0f;
+        private final float mWeightFactor = 0.5f;
+        private final float mNormTheshold = 20.0f;
 
         public PeakCounter(final Context c, final int tripAt, final int interval) {
             mContext = c;
@@ -247,10 +182,20 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
             mCheckedAt = 0;
         }
 
-        public void tick() {
-            ++mCount;
-            Log.d(TAG, String.format("tick: [+] %d", mCount));
-            check();
+        public boolean tick(float norm) {
+            if (!mBlocked) {
+                mWeightenedNorm = (1-mWeightFactor)*mWeightenedNorm + mWeightFactor*norm;
+                if (mWeightenedNorm > mNormTheshold) {
+                    ++mCount;
+                    Log.d(TAG, String.format("tick: [+] %d", mCount));
+                    check();
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
 
         public void check() {
@@ -263,14 +208,26 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
                     mCount = 0;
                     return;
                 } finally {
-                    postNotify(mCount / (float)mTripAt);
                     mCheckedAt = now;
                 }
             }
         }
 
-        private void postNotify(final float t) {
-            LocalBroadcastManager.getInstance(mContext).sendBroadcast(MyActivity.notifyTension(t));
+        public float getWeightenedNorm() {
+            return mWeightenedNorm;
+        }
+
+        public float getTension() {
+            return mCount / (float)mTripAt;
+        }
+
+        public void block() {
+            mBlocked = true;
+            reset();
+        }
+
+        public void unblock() {
+            mBlocked = false;
         }
     }
 
