@@ -4,17 +4,17 @@ import android.content.UriMatcher;
 import android.net.Uri;
 
 public class ProviderMap {
-    public static final String AUTHORITY_NOTE = NoteProvider.class.getCanonicalName();
+    public static final String AUTHORITY_ORACLE = OracleProvider.class.getCanonicalName();
 
     private static UriMatcher sMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
-    public static final int NOTES = 1;
+    public static final int ORACLE = 1;
 
     private static final String SINGLE_ITEM_TYPE = "vnd.android.cursor.item/%s";
     private static final String MULTIPLE_ITEM_TYPE = "vnd.android.cursor.dir/%s";
 
     static {
-        sMatcher.addURI(AUTHORITY_NOTE, "notes", NOTES);
+        sMatcher.addURI(AUTHORITY_ORACLE, "oracle", ORACLE);
     }
 
     private final Uri mUri;
@@ -29,8 +29,8 @@ public class ProviderMap {
 
     public String getContentType() {
         switch (getResourceType()) {
-            case NOTES:
-                return String.format(MULTIPLE_ITEM_TYPE, "notes");
+            case ORACLE:
+                return String.format(MULTIPLE_ITEM_TYPE, "oracle");
             default:
                 return null;
         }
@@ -38,8 +38,8 @@ public class ProviderMap {
 
     public static Uri getContentUri(final int type) {
         switch (type) {
-            case NOTES:
-                return Uri.parse(String.format("content://%s/%s", AUTHORITY_NOTE, "notes"));
+            case ORACLE:
+                return Uri.parse(String.format("content://%s/%s", AUTHORITY_ORACLE, "oracle"));
             default:
                 return null;
         }
