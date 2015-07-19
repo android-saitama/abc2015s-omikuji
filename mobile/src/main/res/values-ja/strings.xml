@@ -2,5 +2,6 @@
 <resources>
 
     <string name="app_name">振ったらポン！</string>
+    <string name="pref_printer_ip_address">プリンタのIPアドレス</string>
 
 </resources>
