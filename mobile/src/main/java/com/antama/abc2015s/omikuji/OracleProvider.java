@@ -24,12 +24,12 @@ import org.apache.commons.csv.CSVFormat;
 public class OracleProvider extends ContentProvider {
     public static final int COL_TOTAL = 1;
     public static final int COL_NUMBER = 2;
-    public static final int COL_COLOR_NAME = 3;
-    public static final int COL_COLOR_RGB = 4;
+    public static final int COL_COLOR_RGB = 3;
+    public static final int COL_COLOR_NAME = 4;
     public static final int COL_AREA = 5;
     public static final int COL_TITLE = 6;
     public static final int COL_DESCRIPTION = 7;
-    public static final String[] COLUMNS = {"_id", "total", "number", "color_name", "color_rgb", "area", "title", "description"};
+    public static final String[] COLUMNS = {"_id", "total", "number", "color_rgb", "color_name", "area", "title", "description"};
 
     @Override
     public String getType(Uri uri) {
