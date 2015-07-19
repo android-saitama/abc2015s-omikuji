@@ -143,13 +143,17 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
             Wearable.NodeApi.getConnectedNodes(mClient).setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
-                    final Node host = getConnectedNodesResult.getNodes().get(0);
-                    Wearable.MessageApi.sendMessage(mClient, host.getId(), "/event", "bump".getBytes()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                        @Override
-                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                            Log.d(TAG, "message sent");
-                        }
-                    });
+                    try {
+                        final Node host = getConnectedNodesResult.getNodes().get(0);
+                        Wearable.MessageApi.sendMessage(mClient, host.getId(), "/event", "bump".getBytes()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                            @Override
+                            public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                Log.d(TAG, "message sent");
+                            }
+                        });
+                    } catch (final IndexOutOfBoundsException ignore) {
+                        Log.d(TAG, "message not sent; no node detected");
+                    }
                 }
             });
         }
