@@ -56,14 +56,18 @@ public class MainService extends Service implements GoogleApiClient.ConnectionCa
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        final String action = intent.getAction();
-        if (action != null) {
-            if (ACTION_BLOCK.equals(action)) {
-                mCounter.block();
-            } else if (ACTION_UNBLOCK.equals(action)) {
-                mCounter.unblock();
+        if (intent != null) {
+            final String action = intent.getAction();
+            if (action != null) {
+                if (ACTION_BLOCK.equals(action)) {
+                    mCounter.block();
+                } else if (ACTION_UNBLOCK.equals(action)) {
+                    mCounter.unblock();
+                }
+                return START_STICKY;
+            } else {
+                return START_STICKY;
             }
-            return START_STICKY;
         } else {
             return START_STICKY;
         }
