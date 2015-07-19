@@ -4,7 +4,7 @@ import android.content.UriMatcher;
 import android.net.Uri;
 
 public class ProviderMap {
-    public static final String AUTHORITY_ORACLE = OracleProvider.class.getCanonicalName();
+    private static final String AUTHORITY_ORACLE = OracleProvider.class.getCanonicalName();
 
     private static UriMatcher sMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
