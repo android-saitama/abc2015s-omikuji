@@ -77,7 +77,7 @@ public class OracleProvider extends ContentProvider {
     private List<Object> pickColor() {
         try {
             final List<Object[]> well = new ArrayList<Object[]>();
-            for (CSVRecord r : CSVParser.parse(rawResourceAsString(getContext(), R.raw.color), CSVFormat.DEFAULT)) {
+            for (CSVRecord r : CSVParser.parse(rawResourceAsString(getContext(), R.raw.color), CSVFormat.DEFAULT.withHeader())) {
                 well.add(new Object[] {r.get("色"), r.get("慣用色名")});
             }
             return Arrays.asList(anyOf(well));
@@ -89,7 +89,7 @@ public class OracleProvider extends ContentProvider {
     private List<Object> pickArea() {
         try {
             final List<Object[]> well = new ArrayList<Object[]>();
-            for (CSVRecord r : CSVParser.parse(rawResourceAsString(getContext(), R.raw.saitama), CSVFormat.DEFAULT)) {
+            for (CSVRecord r : CSVParser.parse(rawResourceAsString(getContext(), R.raw.saitama), CSVFormat.DEFAULT.withHeader())) {
                 well.add(new Object[] {r.get("市区町村"), r.get("タイトル"), r.get("内容")});
             }
             return Arrays.asList(anyOf(well));
